@@ -17,5 +17,10 @@ This demonstration needs the official OP-TEE QEMUv8 emulator and BoringSSL built
 ```
 It also prepare needed files for TLS server and client.
 
+### Generate key-pairs
+The following script will generate all necessary key-pairs :
+```bash
+./generate_keys.sh
+```
 
 

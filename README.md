@@ -23,4 +23,12 @@ The following script will generate all necessary key-pairs :
 ./generate_keys.sh
 ```
 
+### Build 
+Several ARMv8 binaries are needed :
+- the client program
+
+Then please execute the following script :
+```bash
+./build_programs.sh
+```
 

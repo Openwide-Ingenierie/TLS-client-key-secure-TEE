@@ -28,6 +28,18 @@ make \
 
 
 cd ..
+# Build admin binary.
+echo Building admin...
+cd admin
+$CXX -o admin *.cc -Wall \
+ -I$BORINGSSL/include/ \
+ $BORINGSSL/build_arm/crypto/libcrypto.a \
+ -I$OPTEE_QEMU/optee_client/public \
+ $OPTEE_QEMU/out-br/target/usr/lib/libteec.so \
+ -I../ta
+
+
+cd ..
 
 
 

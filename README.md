@@ -27,6 +27,7 @@ The following script will generate all necessary key-pairs :
 Several ARMv8 binaries are needed :
 - the client program
 - the trusted application (TA)
+- the admin program
 
 Then please execute the following script :
 ```bash

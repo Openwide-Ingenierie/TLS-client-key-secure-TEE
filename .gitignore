@@ -27,3 +27,7 @@ client/transport_common.h
 *.map
 *.dmp
 *.ta
+
+# Host FS
+qemu_hostfs/admin
+qemu_hostfs/client

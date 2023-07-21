@@ -34,3 +34,56 @@ Then please execute the following script :
 ./build_programs.sh
 ```
 
+
+## Run demonstration
+
+### Setup the system
+Run the following script to import all needed files into QEMU :
+```bash
+./qemu_import.sh
+```
+
+Then start the QEMU environment in a terminal :
+```bash
+cd optee-qemuv8/build
+make \
+ QEMU_VIRTFS_ENABLE=y \
+ QEMU_VIRTFS_HOST_DIR=$PWD/../../qemu_hostfs/ \
+ run-only
+
+(qemu) c
+```
+`c` command will popup two terminals, please connect to the normal world Linux with `root` user (no password).
+
+In the normal world install the encrypted Trusted Application :
+```bash
+cd /mnt/host
+mv a3a8cd17-4156-41f5-8a66-fe2643a1c93e.ta /lib/optee_armtz
+```
+
+
+### Install private key
+As the administrator you can install the client private key into the TEE :
+```bash
+./admin put
+```
+
+Then the administrator leave the device !
+```bash
+rm admin client.key
+```
+
+
+### Test the client
+On computer side launch the server (port 55555) in a terminal :
+```bash
+cd server
+ifconfig
+./server.sh
+```
+
+Back into QEMU normal world you can now try the client :
+```bash
+cd /mnt/host
+./client <IP>:55555
+```

@@ -16,3 +16,14 @@ client/fd.cc
 client/internal.h
 client/transport_common.cc
 client/transport_common.h
+
+# TA
+*.cmd
+*.o
+*.d
+*dyn_list
+*.lds
+*.elf
+*.map
+*.dmp
+*.ta

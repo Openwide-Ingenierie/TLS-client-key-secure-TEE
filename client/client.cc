@@ -2,6 +2,12 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+// TEEC
+#include <tee_client_api.h>
+
+// TA
+#include <user_ta_header_defines.h>
+
 // BoringSSL
 #include <openssl/base.h>
 #include <openssl/err.h>
@@ -20,8 +26,77 @@ static void usage(const char *name) {
     printf("\nRequired files :\n");
     printf("    |_ CA.crt\n");
     printf("    |_ client.crt\n");
-    printf("    |_ client.key\n");
+    printf("\nclient.key must have been previously inserted into the TEE.\n");
 }
+
+/**
+ *
+ * TEE call
+ *
+ */
+enum ssl_private_key_result_t tee_prv_key_sign(SSL *ssl, uint8_t *out,
+                                               size_t *out_len, size_t max_out,
+                                               uint16_t signature_algorithm,
+                                               const uint8_t *in,
+                                               size_t in_len) {
+    //// Compute client id hash (in value not used here)
+    uint8_t client_id_sha256[SHA256_DIGEST_LENGTH];
+    if (!EVP_Digest(CLIENT_ID, strlen(CLIENT_ID), client_id_sha256, NULL,
+                    EVP_sha256(), NULL)) {
+        printf("Failed to compute client id hash.\n");
+        return ssl_private_key_failure;
+    }
+
+    //// Compute signature hash (SHA256)
+    uint8_t digest[SHA256_DIGEST_LENGTH];
+    if (!EVP_Digest(in, in_len, digest, NULL, EVP_sha256(), NULL)) {
+        printf("Failed to compute client id hash.\n");
+        return ssl_private_key_failure;
+    }
+
+    //// Call Trusted Application
+    TEEC_Result res;
+    TEEC_Context ctx;
+    TEEC_Session sess;
+    TEEC_Operation op;
+    uint32_t err_origin;
+    TEEC_UUID uuid = TA_UUID;
+    res = TEEC_InitializeContext(NULL, &ctx);
+    if (res != TEEC_SUCCESS) {
+        printf("TEEC_InitializeContext failed with code 0x%x\n", res);
+        return ssl_private_key_failure;
+    }
+    res = TEEC_OpenSession(&ctx, &sess, &uuid, TEEC_LOGIN_PUBLIC, NULL, NULL,
+                           &err_origin);
+    if (res != TEEC_SUCCESS) {
+        printf("TEEC_Opensession failed with code 0x%x origin 0x%x\n", res,
+               err_origin);
+        return ssl_private_key_failure;
+    }
+    memset(&op, 0, sizeof(op));
+    op.paramTypes =
+        TEEC_PARAM_TYPES(TEEC_MEMREF_TEMP_INPUT, TEEC_MEMREF_TEMP_INPUT,
+                         TEEC_MEMREF_TEMP_INOUT, TEEC_NONE);
+    op.params[0].tmpref.buffer = client_id_sha256;  // client id
+    op.params[0].tmpref.size = SHA256_DIGEST_LENGTH;
+    op.params[1].tmpref.buffer = digest;  // hashed message to sign
+    op.params[1].tmpref.size = SHA256_DIGEST_LENGTH;
+    op.params[2].tmpref.buffer = out;  // result
+    *out_len = RSA_KEY_SIZE;           // same as bit numbers
+    op.params[2].tmpref.size = *out_len;
+    res = TEEC_InvokeCommand(&sess, TA_SIGN_RSA, &op, &err_origin);
+    if (res != TEEC_SUCCESS) {
+        printf("TEEC_InvokeCommand failed with code 0x%x origin 0x%x", res,
+               err_origin);
+        return ssl_private_key_failure;
+    }
+    TEEC_CloseSession(&sess);
+    TEEC_FinalizeContext(&ctx);
+    return ssl_private_key_success;
+}
+
+static const SSL_PRIVATE_KEY_METHOD prv_key_method = {
+    .sign = tee_prv_key_sign, .decrypt = 0, .complete = 0};
 
 /**
  * Communication
@@ -107,11 +182,8 @@ int main(int argc, char **argv) {
         ERR_print_errors_fp(stderr);
     }
 
-    if (!SSL_CTX_use_PrivateKey_file(ctx.get(), "client.key", SSL_FILETYPE_PEM)) {
-        fprintf(stderr, "Failed to load private key from file.\n");
-        return false;
-    }
-
+    // Enable signing in TEE
+    SSL_CTX_set_private_key_method(ctx.get(), &prv_key_method);
 
     // Enable CA certificate verification
     if (!SSL_CTX_load_verify_locations(ctx.get(), CA_CERTIFICATE, nullptr)) {

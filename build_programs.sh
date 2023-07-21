@@ -11,7 +11,10 @@ cd client
 $CXX -o client *.cc -Wall \
  -I$BORINGSSL/include/ \
  $BORINGSSL/build_arm/ssl/libssl.a \
- $BORINGSSL/build_arm/crypto/libcrypto.a 
+ $BORINGSSL/build_arm/crypto/libcrypto.a \
+ -I$OPTEE_QEMU/optee_client/public \
+ $OPTEE_QEMU/out-br/target/usr/lib/libteec.so \
+ -I../ta
 
 
 cd ..

@@ -19,6 +19,8 @@ static void usage(const char *name) {
     printf("Usage: %s IP:port\n", name);
     printf("\nRequired files :\n");
     printf("    |_ CA.crt\n");
+    printf("    |_ client.crt\n");
+    printf("    |_ client.key\n");
 }
 
 /**
@@ -99,6 +101,17 @@ int main(int argc, char **argv) {
 
     // Init context
     bssl::UniquePtr<SSL_CTX> ctx(SSL_CTX_new(TLS_method()));
+
+    if (!SSL_CTX_use_certificate_chain_file(ctx.get(), CLIENT_CERTIFICATE)) {
+        fprintf(stderr, "Error loading certificate from file.\n");
+        ERR_print_errors_fp(stderr);
+    }
+
+    if (!SSL_CTX_use_PrivateKey_file(ctx.get(), "client.key", SSL_FILETYPE_PEM)) {
+        fprintf(stderr, "Failed to load private key from file.\n");
+        return false;
+    }
+
 
     // Enable CA certificate verification
     if (!SSL_CTX_load_verify_locations(ctx.get(), CA_CERTIFICATE, nullptr)) {

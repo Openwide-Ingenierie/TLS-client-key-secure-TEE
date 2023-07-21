@@ -1,0 +1,18 @@
+# Cloned dirs
+optee-qemuv8/
+boringssl/
+
+# Keys
+*.crt
+*.key
+
+# Executables
+admin/admin
+client/client
+server/bssl
+
+# Imported bssl sources
+client/fd.cc
+client/internal.h
+client/transport_common.cc
+client/transport_common.h

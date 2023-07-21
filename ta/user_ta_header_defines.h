@@ -19,6 +19,16 @@
 #define TA_HAS_KEYS 1
 #define TA_DEL_KEYS 2
 #define TA_SIGN_RSA 4
+/* Structure used as parameter */
+#define MAX_RSA_KEY_SIZE 512  // bytes
+typedef struct {
+    uint8_t n[MAX_RSA_KEY_SIZE];
+    uint32_t n_s;
+    uint8_t e[MAX_RSA_KEY_SIZE];
+    uint32_t e_s;
+    uint8_t d[MAX_RSA_KEY_SIZE];
+    uint32_t d_s;
+} rsa_pkey_t;
 
 /*
  * TA properties: multi-instance TA, no specific attribute
